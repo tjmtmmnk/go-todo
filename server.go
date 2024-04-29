@@ -39,6 +39,7 @@ func main() {
 	e.File("/user", "public/register_user.html")
 	e.File("/login", "public/login_user.html")
 	e.GET("/", controller.Root)
+	e.GET("/todo", controller.ListTodo)
 	e.POST("/todo", controller.CreateTodo)
 	e.POST("/user", controller.CreateUser)
 	e.POST("/login", controller.Login)

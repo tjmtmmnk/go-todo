@@ -2,20 +2,31 @@ package controller
 
 import (
 	"fmt"
+	"github.com/go-jet/jet/v2/mysql"
 	"github.com/labstack/echo/v4"
+	"github.com/samber/lo"
+	"github.com/tjmtmmnk/go-todo/pkg/controller/session"
 	"github.com/tjmtmmnk/go-todo/pkg/db/model"
 	"github.com/tjmtmmnk/go-todo/pkg/db/table"
+	"github.com/tjmtmmnk/go-todo/pkg/dbx"
+	"github.com/tjmtmmnk/go-todo/pkg/timex"
+	"github.com/tjmtmmnk/go-todo/pkg/todo"
+	"net/http"
 	"time"
 )
 
 type CreateTodoRequest struct {
-	//UserID   uint64
 	ItemName string `form:"item_name"`
 	Done     bool   `form:"done"`
 }
 
 func (ctl *Controller) CreateTodo(c echo.Context) error {
 	ctx := c.Request().Context()
+
+	sess, err := session.ExtractFromContext(c)
+	if err != nil {
+		return err
+	}
 
 	req := new(CreateTodoRequest)
 	if err := c.Bind(req); err != nil {
@@ -24,8 +35,8 @@ func (ctl *Controller) CreateTodo(c echo.Context) error {
 	}
 
 	todoModel := model.Todos{
-		ID:        2,
-		UserID:    1,
+		ID:        dbx.UUID(ctl.db),
+		UserID:    sess.UserID,
 		ItemName:  req.ItemName,
 		Done:      req.Done,
 		CreatedAt: time.Now().UTC(),
@@ -33,11 +44,46 @@ func (ctl *Controller) CreateTodo(c echo.Context) error {
 	}
 
 	stmt := table.Todos.INSERT(table.Todos.AllColumns).MODEL(todoModel)
-	_, err := stmt.ExecContext(ctx, ctl.db)
+
+	_, err = stmt.ExecContext(ctx, ctl.db)
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
 
 	return nil
+}
+
+func (ctl *Controller) ListTodo(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	sess, err := session.ExtractFromContext(c)
+	if err != nil {
+		return err
+	}
+
+	var todoModels []model.Todos
+
+	stmt := table.Todos.
+		SELECT(table.Todos.AllColumns).
+		FROM(table.Todos).
+		WHERE(table.Todos.UserID.EQ(mysql.Uint64(sess.UserID)))
+
+	err = stmt.QueryContext(ctx, ctl.db, &todoModels)
+	if err != nil {
+		return err
+	}
+
+	todos := lo.Map(todoModels, func(t model.Todos, _ int) *todo.Todo {
+		return &todo.Todo{
+			ID:        t.ID,
+			UserID:    t.UserID,
+			ItemName:  t.ItemName,
+			Done:      t.Done,
+			CreatedAt: t.CreatedAt.In(timex.JST),
+			UpdatedAt: t.UpdatedAt.In(timex.JST),
+		}
+	})
+
+	return c.JSON(http.StatusOK, todos)
 }
