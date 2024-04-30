@@ -5,10 +5,12 @@ import (
 	"github.com/go-jet/jet/v2/mysql"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo/v4"
-	session2 "github.com/tjmtmmnk/go-todo/pkg/controller/session"
+	"github.com/moznion/go-optional"
+	"github.com/tjmtmmnk/go-todo/pkg/controller/session"
 	"github.com/tjmtmmnk/go-todo/pkg/db/model"
 	"github.com/tjmtmmnk/go-todo/pkg/db/table"
 	"github.com/tjmtmmnk/go-todo/pkg/dbx"
+	"github.com/tjmtmmnk/go-todo/pkg/timex"
 	"github.com/tjmtmmnk/go-todo/pkg/user"
 	"golang.org/x/crypto/bcrypt"
 	"net/http"
@@ -52,6 +54,37 @@ func (ctl *Controller) CreateUser(c echo.Context) error {
 	return nil
 }
 
+func (ctl *Controller) GetUser(c echo.Context) error {
+	ctx := c.Request().Context()
+
+	sess, err := session.ExtractFromContext(c)
+	if err != nil {
+		return err
+	}
+
+	userModel, err := dbx.Single[model.Users](
+		ctx,
+		ctl.db,
+		table.Users,
+		table.Users.AllColumns,
+		optional.Some(table.Users.ID.EQ(mysql.Uint64(sess.UserID))),
+	)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch user")
+	}
+
+	user := user.Users{
+		ID:        user.ID(userModel.ID),
+		Name:      userModel.Name,
+		Nickname:  optional.FromNillable[string](userModel.Nickname),
+		Password:  user.HashedPassword(userModel.Password),
+		CreatedAt: userModel.CreatedAt.In(timex.JST),
+		UpdatedAt: userModel.UpdatedAt.In(timex.JST),
+	}
+
+	return c.JSON(http.StatusOK, user)
+}
+
 type LoginRequest struct {
 	Name        string `form:"name"`
 	RawPassword string `form:"raw_password"`
@@ -88,7 +121,7 @@ func (ctl *Controller) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "wrong password")
 	}
 
-	sess := session2.Session{UserID: row.ID}
+	sess := session.Session{UserID: row.ID}
 
 	err = sess.Save(c, &sessions.Options{
 		Path:     "/",
