@@ -26,7 +26,11 @@ func main() {
 		DBName:   "devel",
 		Password: "example",
 	}
-	table.UseSchema("devel")
+	appEnv, exist := os.LookupEnv("APP_ENV")
+	if !exist {
+		appEnv = "devel"
+	}
+	table.UseSchema(appEnv)
 
 	db, err := dbConfig.Connect()
 	defer db.Close()
