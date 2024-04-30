@@ -18,9 +18,9 @@ import (
 )
 
 type CreateUserRequest struct {
-	Name        string  `form:"name"`
-	Nickname    *string `form:"nickname"`
-	RawPassword string  `form:"raw_password"`
+	Name        string                  `form:"name"`
+	Nickname    optional.Option[string] `form:"nickname"`
+	RawPassword string                  `form:"raw_password"`
 }
 
 func (ctl *Controller) CreateUser(c echo.Context) error {
@@ -40,7 +40,7 @@ func (ctl *Controller) CreateUser(c echo.Context) error {
 	userModel := model.Users{
 		ID:        ctl.db.UUID(),
 		Name:      req.Name,
-		Nickname:  req.Nickname,
+		Nickname:  req.Nickname.UnwrapAsPtr(),
 		Password:  string(passwordHash),
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),

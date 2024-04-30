@@ -37,7 +37,7 @@ func main() {
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 
 	e.File("/", "public/root.html")
-	e.File("/user", "public/register_user.html")
+	e.File("/register", "public/register_user.html")
 	e.File("/login", "public/login_user.html")
 	e.GET("/todo", controller.ListTodo)
 	e.GET("/user", controller.GetUser)
