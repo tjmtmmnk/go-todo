@@ -32,7 +32,7 @@ func (ctl *Controller) CreateUser(c echo.Context) error {
 		return err
 	}
 
-	passwordHash, err := user.ToHash(req.RawPassword)
+	passwordHash, err := user.ToHash(user.RawPassword(req.RawPassword))
 	if err != nil {
 		return err
 	}

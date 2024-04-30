@@ -6,6 +6,13 @@ const (
 	Cost = 10
 )
 
-func ToHash(password string) ([]byte, error) {
-	return bcrypt.GenerateFromPassword([]byte(password), Cost)
+type RawPassword string
+type HashedPassword string
+
+func ToHash(password RawPassword) (HashedPassword, error) {
+	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), Cost)
+	if err != nil {
+		return HashedPassword(""), err
+	}
+	return HashedPassword(hashedPassword), nil
 }

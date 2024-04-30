@@ -6,7 +6,6 @@ import (
 )
 
 type ID uint64
-type HashedPassword string
 
 type Users struct {
 	ID        ID                      `json:"id,omitempty"`
