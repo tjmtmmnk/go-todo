@@ -8,6 +8,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/tjmtmmnk/go-todo/pkg/controller"
+	"github.com/tjmtmmnk/go-todo/pkg/db/table"
 	"github.com/tjmtmmnk/go-todo/pkg/dbx"
 	"log/slog"
 	"os"
@@ -25,6 +26,7 @@ func main() {
 		DBName:   "devel",
 		Password: "example",
 	}
+	table.UseSchema("devel")
 
 	db, err := dbConfig.Connect()
 	defer db.Close()
