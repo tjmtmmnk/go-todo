@@ -36,7 +36,7 @@ func (ctl *Controller) CreateTodo(c echo.Context) error {
 	}
 
 	todoModel := model.Todos{
-		ID:        dbx.UUID(ctl.db),
+		ID:        ctl.db.UUID(),
 		UserID:    sess.UserID,
 		ItemName:  req.ItemName,
 		Done:      req.Done,

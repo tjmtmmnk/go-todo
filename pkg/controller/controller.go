@@ -1,12 +1,14 @@
 package controller
 
-import "database/sql"
+import (
+	"github.com/tjmtmmnk/go-todo/pkg/dbx"
+)
 
 type Controller struct {
-	db *sql.DB
+	db *dbx.DB
 }
 
-func NewController(db *sql.DB) *Controller {
+func NewController(db *dbx.DB) *Controller {
 	return &Controller{
 		db,
 	}

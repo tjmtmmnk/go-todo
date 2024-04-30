@@ -21,9 +21,11 @@ type CreateUserRequest struct {
 	RawPassword string  `form:"raw_password"`
 }
 
-func (ctl *Controller) CreateUser(ctx echo.Context) error {
+func (ctl *Controller) CreateUser(c echo.Context) error {
+	ctx := c.Request().Context()
+
 	req := new(CreateUserRequest)
-	if err := ctx.Bind(req); err != nil {
+	if err := c.Bind(req); err != nil {
 		fmt.Println(err)
 		return err
 	}
@@ -34,7 +36,7 @@ func (ctl *Controller) CreateUser(ctx echo.Context) error {
 	}
 
 	userModel := model.Users{
-		ID:        dbx.UUID(ctl.db),
+		ID:        ctl.db.UUID(),
 		Name:      req.Name,
 		Nickname:  req.Nickname,
 		Password:  string(passwordHash),
@@ -42,11 +44,9 @@ func (ctl *Controller) CreateUser(ctx echo.Context) error {
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	stmt := table.Users.INSERT(table.Users.AllColumns).MODEL(userModel)
-	_, err = stmt.Exec(ctl.db)
+	err = dbx.Insert(ctx, ctl.db, table.Users, table.Users.AllColumns, userModel)
 	if err != nil {
-		fmt.Println(err)
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert")
 	}
 
 	return nil

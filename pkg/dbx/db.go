@@ -17,12 +17,24 @@ type MySQLConnectionEnv struct {
 	Password string
 }
 
-func (mc *MySQLConnectionEnv) Connect() (*sql.DB, error) {
-	dsn := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v?parseTime=true&interpolateParams=true", mc.User, mc.Password, mc.Host, mc.Port, mc.DBName)
-	return sql.Open("mysql", dsn)
+type DB struct {
+	*sql.DB
 }
 
-func UUID(db *sql.DB) uint64 {
+func (mc *MySQLConnectionEnv) Connect() (*DB, error) {
+	dsn := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v?parseTime=true&interpolateParams=true", mc.User, mc.Password, mc.Host, mc.Port, mc.DBName)
+
+	db, err := sql.Open("mysql", dsn)
+	if err != nil {
+		return nil, err
+	}
+
+	return &DB{
+		db,
+	}, nil
+}
+
+func (db *DB) UUID() uint64 {
 	var uuid uint64
 
 	row := db.QueryRow("select uuid_short()")
@@ -34,7 +46,7 @@ func UUID(db *sql.DB) uint64 {
 
 func Single[T any](
 	ctx context.Context,
-	db *sql.DB,
+	db *DB,
 	table mysql.Table,
 	columnList mysql.ColumnList,
 	where optional.Option[mysql.BoolExpression],
@@ -59,7 +71,7 @@ func Single[T any](
 
 func Search[T any](
 	ctx context.Context,
-	db *sql.DB,
+	db *DB,
 	table mysql.Table,
 	columnList mysql.ColumnList,
 	where optional.Option[mysql.BoolExpression],
@@ -80,4 +92,21 @@ func Search[T any](
 	}
 
 	return dest, nil
+}
+
+func Insert(
+	ctx context.Context,
+	db *DB,
+	table mysql.Table,
+	columnList mysql.ColumnList,
+	model interface{},
+) error {
+	stmt := table.INSERT(columnList).MODEL(model)
+
+	_, err := stmt.ExecContext(ctx, db)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
