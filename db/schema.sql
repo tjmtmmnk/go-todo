@@ -17,6 +17,8 @@ create table if not exists `todos`
     `user_id`    bigint unsigned not null,
     `item_name`  varchar(1000)   not null,
     `done`       bool            not null default false,
+    `start_at`   datetime(3)              default null,
+    `end_at`     datetime(3)              default null,
     `created_at` datetime(3)     not null,
     `updated_at` datetime(3)     not null,
     primary key (`id`),
