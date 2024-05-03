@@ -21,6 +21,8 @@ type todosTable struct {
 	UserID    mysql.ColumnInteger
 	ItemName  mysql.ColumnString
 	Done      mysql.ColumnBool
+	StartAt   mysql.ColumnTimestamp
+	EndAt     mysql.ColumnTimestamp
 	CreatedAt mysql.ColumnTimestamp
 	UpdatedAt mysql.ColumnTimestamp
 
@@ -67,10 +69,12 @@ func newTodosTableImpl(schemaName, tableName, alias string) todosTable {
 		UserIDColumn    = mysql.IntegerColumn("user_id")
 		ItemNameColumn  = mysql.StringColumn("item_name")
 		DoneColumn      = mysql.BoolColumn("done")
+		StartAtColumn   = mysql.TimestampColumn("start_at")
+		EndAtColumn     = mysql.TimestampColumn("end_at")
 		CreatedAtColumn = mysql.TimestampColumn("created_at")
 		UpdatedAtColumn = mysql.TimestampColumn("updated_at")
-		allColumns      = mysql.ColumnList{IDColumn, UserIDColumn, ItemNameColumn, DoneColumn, CreatedAtColumn, UpdatedAtColumn}
-		mutableColumns  = mysql.ColumnList{UserIDColumn, ItemNameColumn, DoneColumn, CreatedAtColumn, UpdatedAtColumn}
+		allColumns      = mysql.ColumnList{IDColumn, UserIDColumn, ItemNameColumn, DoneColumn, StartAtColumn, EndAtColumn, CreatedAtColumn, UpdatedAtColumn}
+		mutableColumns  = mysql.ColumnList{UserIDColumn, ItemNameColumn, DoneColumn, StartAtColumn, EndAtColumn, CreatedAtColumn, UpdatedAtColumn}
 	)
 
 	return todosTable{
@@ -81,6 +85,8 @@ func newTodosTableImpl(schemaName, tableName, alias string) todosTable {
 		UserID:    UserIDColumn,
 		ItemName:  ItemNameColumn,
 		Done:      DoneColumn,
+		StartAt:   StartAtColumn,
+		EndAt:     EndAtColumn,
 		CreatedAt: CreatedAtColumn,
 		UpdatedAt: UpdatedAtColumn,
 

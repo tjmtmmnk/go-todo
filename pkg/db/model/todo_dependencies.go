@@ -11,13 +11,10 @@ import (
 	"time"
 )
 
-type Todos struct {
-	ID        uint64 `sql:"primary_key"`
-	UserID    uint64
-	ItemName  string
-	Done      bool
-	StartAt   *time.Time
-	EndAt     *time.Time
-	CreatedAt time.Time
-	UpdatedAt time.Time
+type TodoDependencies struct {
+	ID           uint64 `sql:"primary_key"`
+	SourceTodoID uint64
+	DestTodoID   uint64
+	CreatedAt    time.Time
+	UpdatedAt    time.Time
 }
