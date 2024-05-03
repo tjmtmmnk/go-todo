@@ -17,8 +17,10 @@ import (
 )
 
 type CreateTodoRequest struct {
-	ItemName string `form:"item_name"`
-	Done     bool   `form:"done"`
+	ItemName string             `form:"item_name"`
+	Done     bool               `form:"done"`
+	StartAt  timex.OptionalDate `form:"start_at"`
+	EndAt    timex.OptionalDate `form:"end_at"`
 }
 
 func (ctl *Controller) CreateTodo(c echo.Context) error {
@@ -40,16 +42,21 @@ func (ctl *Controller) CreateTodo(c echo.Context) error {
 		UserID:    sess.UserID,
 		ItemName:  req.ItemName,
 		Done:      req.Done,
+		StartAt:   timex.UnwrapAsUTCPtr(optional.Option[time.Time](req.StartAt)),
+		EndAt:     timex.UnwrapAsUTCPtr(optional.Option[time.Time](req.EndAt)),
 		CreatedAt: time.Now().UTC(),
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	stmt := table.Todos.INSERT(table.Todos.AllColumns).MODEL(todoModel)
-
-	_, err = stmt.ExecContext(ctx, ctl.db)
+	err = dbx.Insert(
+		ctx,
+		ctl.db,
+		table.Todos,
+		table.Todos.AllColumns,
+		todoModel,
+	)
 	if err != nil {
-		fmt.Println(err)
-		return err
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert todo")
 	}
 
 	return nil
