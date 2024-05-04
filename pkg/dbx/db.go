@@ -119,3 +119,20 @@ func InsertByModel(ctx context.Context, table mysql.Table, columnList mysql.Colu
 
 	return nil
 }
+
+func Update(ctx context.Context, table mysql.Table, set mysql.UpdateStatement, where optional.Option[mysql.BoolExpression]) error {
+	var stmt mysql.UpdateStatement
+
+	if where.IsSome() {
+		stmt = table.UPDATE().SET(set).WHERE(where.Unwrap())
+	} else {
+		stmt = table.UPDATE().SET(set)
+	}
+
+	_, err := stmt.ExecContext(ctx, GetDB())
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
