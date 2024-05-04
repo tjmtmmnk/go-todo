@@ -76,15 +76,14 @@ func Single[T any](ctx context.Context, table mysql.Table, columnList mysql.Proj
 	} else {
 		stmt = table.SELECT(columnList[0], columnList[1:]...).FROM(table).LIMIT(1)
 	}
-	fmt.Println(stmt.DebugSql())
 
-	var dest T
-	err := stmt.QueryContext(ctx, GetDB(), &dest)
+	dest := new(T)
+	err := stmt.QueryContext(ctx, GetDB(), dest)
 	if err != nil {
 		return nil, err
 	}
 
-	return &dest, nil
+	return dest, nil
 }
 
 func Search[T any](ctx context.Context, table mysql.Table, columnList mysql.ProjectionList, where optional.Option[mysql.BoolExpression]) ([]T, error) {
