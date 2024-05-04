@@ -48,7 +48,7 @@ func (ctl *Controller) CreateTodo(c echo.Context) error {
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	err = dbx.Insert(ctx, table.Todos, table.Todos.AllColumns, todoModel)
+	err = dbx.InsertByModel(ctx, table.Todos, table.Todos.AllColumns, todoModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert todo")
 	}

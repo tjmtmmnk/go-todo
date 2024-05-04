@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"github.com/gorilla/sessions"
 	"github.com/labstack/echo-contrib/session"
 	"github.com/labstack/echo/v4"
@@ -16,8 +15,6 @@ import (
 
 func main() {
 	e := echo.New()
-
-	fmt.Println()
 
 	dbConfig := &dbx.MySQLConnectionEnv{
 		Host:     "127.0.0.1",

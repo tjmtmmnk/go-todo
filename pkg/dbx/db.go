@@ -109,7 +109,7 @@ func Search[T any](ctx context.Context, table mysql.Table, columnList mysql.Proj
 	return dest, nil
 }
 
-func Insert(ctx context.Context, table mysql.Table, columnList mysql.ColumnList, model interface{}) error {
+func InsertByModel(ctx context.Context, table mysql.Table, columnList mysql.ColumnList, model interface{}) error {
 	stmt := table.INSERT(columnList).MODEL(model)
 
 	_, err := stmt.ExecContext(ctx, GetDB())

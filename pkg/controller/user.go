@@ -46,7 +46,7 @@ func (ctl *Controller) CreateUser(c echo.Context) error {
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	err = dbx.Insert(ctx, table.Users, table.Users.AllColumns, userModel)
+	err = dbx.InsertByModel(ctx, table.Users, table.Users.AllColumns, userModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert user: "+err.Error())
 	}
