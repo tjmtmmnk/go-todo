@@ -28,13 +28,15 @@ var (
 	dbErr error
 )
 
-func (mc *MySQLConnectionEnv) InitDB() error {
-	dsn := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v?parseTime=true&interpolateParams=true", mc.User, mc.Password, mc.Host, mc.Port, mc.DBName)
+func (mc *MySQLConnectionEnv) ToDSN() string {
+	return fmt.Sprintf("%v:%v@tcp(%v:%v)/%v?parseTime=true&interpolateParams=true", mc.User, mc.Password, mc.Host, mc.Port, mc.DBName)
+}
 
+func (mc *MySQLConnectionEnv) InitDB() error {
 	once.Do(func() {
 		var _db *sql.DB
 
-		_db, dbErr = sql.Open("mysql", dsn)
+		_db, dbErr = sql.Open("mysql", mc.ToDSN())
 
 		db = &DB{_db}
 
