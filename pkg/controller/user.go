@@ -38,7 +38,7 @@ func (ctl *Controller) CreateUser(c echo.Context) error {
 	}
 
 	userModel := model.Users{
-		ID:        ctl.db.UUID(),
+		ID:        dbx.GetDB().UUID(),
 		Name:      req.Name,
 		Nickname:  req.Nickname.UnwrapAsPtr(),
 		Password:  string(passwordHash),
@@ -46,9 +46,9 @@ func (ctl *Controller) CreateUser(c echo.Context) error {
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	err = dbx.Insert(ctx, ctl.db, table.Users, table.Users.AllColumns, userModel)
+	err = dbx.Insert(ctx, table.Users, table.Users.AllColumns, userModel)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert")
+		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert user: "+err.Error())
 	}
 
 	return nil
@@ -64,11 +64,11 @@ func (ctl *Controller) GetUser(c echo.Context) error {
 
 	userModel, err := dbx.Single[model.Users](
 		ctx,
-		ctl.db,
 		table.Users,
-		table.Users.AllColumns,
+		mysql.ProjectionList{table.Users.AllColumns},
 		optional.Some(table.Users.ID.EQ(mysql.Uint64(sess.UserID))),
 	)
+
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch user")
 	}
@@ -99,29 +99,26 @@ func (ctl *Controller) Login(c echo.Context) error {
 		return err
 	}
 
-	var row struct {
-		ID             uint64
-		HashedPassword string
+	type row struct {
+		ID             uint64 `alias:"users.id"`
+		HashedPassword string `alias:"users.password"`
 	}
 
-	stmt := table.Users.
-		SELECT(
-			table.Users.ID.AS("id"),
-			table.Users.Password.AS("hashed_password"),
-		).
-		FROM(table.Users).
-		WHERE(table.Users.Name.EQ(mysql.String(req.Name)))
-
-	err := stmt.QueryContext(ctx, ctl.db, &row)
+	result, err := dbx.Single[row](
+		ctx,
+		table.Users,
+		[]mysql.Projection{table.Users.ID, table.Users.Password},
+		optional.Some(table.Users.Name.EQ(mysql.String(req.Name))),
+	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch password"+err.Error())
 	}
 
-	if bcrypt.CompareHashAndPassword([]byte(row.HashedPassword), []byte(req.RawPassword)) != nil {
+	if bcrypt.CompareHashAndPassword([]byte(result.HashedPassword), []byte(req.RawPassword)) != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "wrong password")
 	}
 
-	sess := session.Session{UserID: row.ID}
+	sess := session.Session{UserID: result.ID}
 
 	err = sess.Save(c, &sessions.Options{
 		Path:     "/",

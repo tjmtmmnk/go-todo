@@ -7,6 +7,7 @@ import (
 	"github.com/go-jet/jet/v2/mysql"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/moznion/go-optional"
+	"sync"
 )
 
 type MySQLConnectionEnv struct {
@@ -21,17 +22,37 @@ type DB struct {
 	*sql.DB
 }
 
-func (mc *MySQLConnectionEnv) Connect() (*DB, error) {
+var (
+	once  sync.Once
+	db    *DB
+	dbErr error
+)
+
+func (mc *MySQLConnectionEnv) InitDB() error {
 	dsn := fmt.Sprintf("%v:%v@tcp(%v:%v)/%v?parseTime=true&interpolateParams=true", mc.User, mc.Password, mc.Host, mc.Port, mc.DBName)
 
-	db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		return nil, err
-	}
+	once.Do(func() {
+		var _db *sql.DB
 
-	return &DB{
-		db,
-	}, nil
+		_db, dbErr = sql.Open("mysql", dsn)
+
+		db = &DB{_db}
+
+		db.SetConnMaxLifetime(0)
+		db.SetMaxIdleConns(5)
+		db.SetMaxOpenConns(1000)
+
+		dbErr = db.Ping()
+	})
+
+	return dbErr
+}
+
+func GetDB() *DB {
+	if db == nil {
+		panic("db must be initialized")
+	}
+	return db
 }
 
 func (db *DB) UUID() uint64 {
@@ -44,24 +65,21 @@ func (db *DB) UUID() uint64 {
 	return uuid
 }
 
-func Single[T any](
-	ctx context.Context,
-	db *DB,
-	table mysql.Table,
-	columnList mysql.ColumnList,
-	where optional.Option[mysql.BoolExpression],
-) (*T, error) {
-	var (
-		dest T
-		stmt mysql.SelectStatement
-	)
-	if where.IsSome() {
-		stmt = table.SELECT(columnList).FROM(table).WHERE(where.Unwrap()).LIMIT(1)
-	} else {
-		stmt = table.SELECT(columnList).FROM(table).LIMIT(1)
+func Single[T any](ctx context.Context, table mysql.Table, columnList mysql.ProjectionList, where optional.Option[mysql.BoolExpression]) (*T, error) {
+	if len(columnList) == 0 {
+		return nil, fmt.Errorf("column needed")
 	}
 
-	err := stmt.QueryContext(ctx, db, &dest)
+	var stmt mysql.SelectStatement
+	if where.IsSome() {
+		stmt = table.SELECT(columnList[0], columnList[1:]...).FROM(table).WHERE(where.Unwrap()).LIMIT(1)
+	} else {
+		stmt = table.SELECT(columnList[0], columnList[1:]...).FROM(table).LIMIT(1)
+	}
+	fmt.Println(stmt.DebugSql())
+
+	var dest T
+	err := stmt.QueryContext(ctx, GetDB(), &dest)
 	if err != nil {
 		return nil, err
 	}
@@ -69,24 +87,16 @@ func Single[T any](
 	return &dest, nil
 }
 
-func Search[T any](
-	ctx context.Context,
-	db *DB,
-	table mysql.Table,
-	columnList mysql.ColumnList,
-	where optional.Option[mysql.BoolExpression],
-) ([]T, error) {
-	var (
-		dest []T
-		stmt mysql.SelectStatement
-	)
+func Search[T any](ctx context.Context, table mysql.Table, columnList mysql.ProjectionList, where optional.Option[mysql.BoolExpression]) ([]T, error) {
+	var stmt mysql.SelectStatement
 	if where.IsSome() {
-		stmt = table.SELECT(columnList).FROM(table).WHERE(where.Unwrap())
+		stmt = table.SELECT(columnList[0], columnList[1:]...).FROM(table).WHERE(where.Unwrap())
 	} else {
-		stmt = table.SELECT(columnList).FROM(table)
+		stmt = table.SELECT(columnList[0], columnList[1:]...).FROM(table)
 	}
 
-	err := stmt.QueryContext(ctx, db, &dest)
+	var dest []T
+	err := stmt.QueryContext(ctx, GetDB(), &dest)
 	if err != nil {
 		return nil, err
 	}
@@ -94,16 +104,10 @@ func Search[T any](
 	return dest, nil
 }
 
-func Insert(
-	ctx context.Context,
-	db *DB,
-	table mysql.Table,
-	columnList mysql.ColumnList,
-	model interface{},
-) error {
+func Insert(ctx context.Context, table mysql.Table, columnList mysql.ColumnList, model interface{}) error {
 	stmt := table.INSERT(columnList).MODEL(model)
 
-	_, err := stmt.ExecContext(ctx, db)
+	_, err := stmt.ExecContext(ctx, GetDB())
 	if err != nil {
 		return err
 	}

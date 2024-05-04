@@ -1,6 +1,8 @@
 package todo
 
-import "time"
+import (
+	"time"
+)
 
 type Todo struct {
 	ID        uint64    `json:"id,omitempty"`

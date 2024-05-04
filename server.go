@@ -32,13 +32,13 @@ func main() {
 	}
 	table.UseSchema(appEnv)
 
-	db, err := dbConfig.Connect()
-	defer db.Close()
+	err := dbConfig.InitDB()
 	if err != nil {
 		panic(err)
 	}
+	defer dbx.GetDB().Close()
 
-	controller := controller.NewController(db)
+	controller := controller.NewController()
 
 	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
 

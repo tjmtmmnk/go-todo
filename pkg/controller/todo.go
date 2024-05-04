@@ -38,7 +38,7 @@ func (ctl *Controller) CreateTodo(c echo.Context) error {
 	}
 
 	todoModel := model.Todos{
-		ID:        ctl.db.UUID(),
+		ID:        dbx.GetDB().UUID(),
 		UserID:    sess.UserID,
 		ItemName:  req.ItemName,
 		Done:      req.Done,
@@ -48,13 +48,7 @@ func (ctl *Controller) CreateTodo(c echo.Context) error {
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	err = dbx.Insert(
-		ctx,
-		ctl.db,
-		table.Todos,
-		table.Todos.AllColumns,
-		todoModel,
-	)
+	err = dbx.Insert(ctx, table.Todos, table.Todos.AllColumns, todoModel)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert todo")
 	}
@@ -72,11 +66,11 @@ func (ctl *Controller) ListTodo(c echo.Context) error {
 
 	todoModels, err := dbx.Search[model.Todos](
 		ctx,
-		ctl.db,
 		table.Todos,
-		table.Todos.AllColumns,
+		mysql.ProjectionList{table.Todos.AllColumns},
 		optional.Some(table.Todos.UserID.EQ(mysql.Uint64(sess.UserID))),
 	)
+	fmt.Println(todoModels)
 
 	todos := lo.Map(todoModels, func(t model.Todos, _ int) *todo.Todo {
 		return &todo.Todo{
