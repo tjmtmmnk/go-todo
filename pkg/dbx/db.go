@@ -88,6 +88,10 @@ func Single[T any](ctx context.Context, table mysql.Table, columnList mysql.Proj
 }
 
 func Search[T any](ctx context.Context, table mysql.Table, columnList mysql.ProjectionList, where optional.Option[mysql.BoolExpression]) ([]T, error) {
+	if len(columnList) == 0 {
+		return nil, fmt.Errorf("column needed")
+	}
+
 	var stmt mysql.SelectStatement
 	if where.IsSome() {
 		stmt = table.SELECT(columnList[0], columnList[1:]...).FROM(table).WHERE(where.Unwrap())
