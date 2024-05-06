@@ -25,7 +25,7 @@ func TestSingle(t *testing.T) {
 		wantErr bool
 	}
 
-	now := time.Now().UTC()
+	now := time.Now().UTC().Truncate(time.Second)
 	db := MustConnect(t)
 
 	testCases := []testCase[model.Todos]{
@@ -76,7 +76,7 @@ func TestSingle(t *testing.T) {
 	}
 
 	todoModel1 := model.Todos{
-		ID:        GetDB().UUID(),
+		ID:        1,
 		UserID:    userModel.ID,
 		ItemName:  "",
 		Done:      false,
