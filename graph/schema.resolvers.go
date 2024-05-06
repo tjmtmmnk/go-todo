@@ -10,9 +10,10 @@ import (
 	"github.com/go-jet/jet/v2/mysql"
 	"github.com/moznion/go-optional"
 	"github.com/samber/lo"
-	model2 "github.com/tjmtmmnk/go-todo/pkg/db/model"
+	dbModel "github.com/tjmtmmnk/go-todo/pkg/db/model"
 	"github.com/tjmtmmnk/go-todo/pkg/db/table"
 	"github.com/tjmtmmnk/go-todo/pkg/dbx"
+	"github.com/tjmtmmnk/go-todo/pkg/timex"
 	"strconv"
 	"time"
 
@@ -26,7 +27,7 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) 
 
 // Todos is the resolver for the todos field.
 func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	todos, err := dbx.Search[model2.Todos](
+	todos, err := dbx.Search[dbModel.Todos](
 		ctx,
 		table.Todos,
 		mysql.ProjectionList{table.Todos.AllColumns},
@@ -35,10 +36,10 @@ func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
 	if err != nil {
 		return nil, err
 	}
-	userIds := lo.Map(todos, func(todo model2.Todos, index int) mysql.Expression {
+	userIds := lo.Map(todos, func(todo dbModel.Todos, index int) mysql.Expression {
 		return mysql.Uint64(todo.UserID)
 	})
-	users, err := dbx.Search[model2.Users](
+	users, err := dbx.Search[dbModel.Users](
 		ctx,
 		table.Users,
 		mysql.ProjectionList{table.Users.AllColumns},
@@ -47,18 +48,17 @@ func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
 	if err != nil {
 		return nil, err
 	}
-	userIdToUser := lo.KeyBy(users, func(user model2.Users) uint64 {
+	userIdToUser := lo.KeyBy(users, func(user dbModel.Users) uint64 {
 		return user.ID
 	})
-	fmt.Printf("%v", userIdToUser)
 
-	todoModels := lo.Map(todos, func(todo model2.Todos, index int) *model.Todo {
+	todoModels := lo.Map(todos, func(todo dbModel.Todos, index int) *model.Todo {
 		user, ok := userIdToUser[todo.UserID]
 		if !ok {
 			return nil
 		}
-		createdAt := user.CreatedAt.Format(time.DateTime)
-		updatedAt := user.UpdatedAt.Format(time.DateTime)
+		userCreatedAt := user.CreatedAt.In(timex.JST).Format(time.DateTime)
+		userUpdatedAt := user.UpdatedAt.In(timex.JST).Format(time.DateTime)
 		return &model.Todo{
 			ID:       strconv.FormatUint(todo.ID, 10),
 			ItemName: todo.ItemName,
@@ -67,8 +67,8 @@ func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
 				ID:        strconv.FormatUint(user.ID, 10),
 				Name:      user.Name,
 				Nickname:  user.Nickname,
-				CreatedAt: &createdAt,
-				UpdatedAt: &updatedAt,
+				CreatedAt: &userCreatedAt,
+				UpdatedAt: &userUpdatedAt,
 			},
 			StartAt:   nil,
 			EndAt:     nil,
