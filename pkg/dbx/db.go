@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/go-jet/jet/v2/mysql"
+	"github.com/go-jet/jet/v2/qrm"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/moznion/go-optional"
 	"sync"
@@ -67,20 +68,26 @@ func (db *DB) UUID() uint64 {
 	return uuid
 }
 
-func Single[T any](ctx context.Context, table mysql.Table, columnList mysql.ProjectionList, where optional.Option[mysql.BoolExpression]) (*T, error) {
-	if len(columnList) == 0 {
+type SelectArgs struct {
+	Table      mysql.Table
+	ColumnList mysql.ProjectionList
+	Where      optional.Option[mysql.BoolExpression]
+}
+
+func Single[T any](ctx context.Context, db qrm.Queryable, args *SelectArgs) (*T, error) {
+	if len(args.ColumnList) == 0 {
 		return nil, fmt.Errorf("column needed")
 	}
 
 	var stmt mysql.SelectStatement
-	if where.IsSome() {
-		stmt = table.SELECT(columnList[0], columnList[1:]...).FROM(table).WHERE(where.Unwrap()).LIMIT(1)
+	if args.Where.IsSome() {
+		stmt = args.Table.SELECT(args.ColumnList[0], args.ColumnList[1:]...).FROM(args.Table).WHERE(args.Where.Unwrap()).LIMIT(1)
 	} else {
-		stmt = table.SELECT(columnList[0], columnList[1:]...).FROM(table).LIMIT(1)
+		stmt = args.Table.SELECT(args.ColumnList[0], args.ColumnList[1:]...).FROM(args.Table).WHERE(args.Where.Unwrap())
 	}
 
 	dest := new(T)
-	err := stmt.QueryContext(ctx, GetDB(), dest)
+	err := stmt.QueryContext(ctx, db, dest)
 	if err != nil {
 		return nil, err
 	}
@@ -109,10 +116,16 @@ func Search[T any](ctx context.Context, table mysql.Table, columnList mysql.Proj
 	return dest, nil
 }
 
-func InsertByModel(ctx context.Context, table mysql.Table, columnList mysql.ColumnList, model interface{}) error {
-	stmt := table.INSERT(columnList).MODEL(model)
+type InsertArgs struct {
+	Table      mysql.Table
+	ColumnList mysql.ColumnList
+	Model      interface{}
+}
 
-	_, err := stmt.ExecContext(ctx, GetDB())
+func InsertByModel(ctx context.Context, db qrm.Executable, args *InsertArgs) error {
+	stmt := args.Table.INSERT(args.ColumnList).MODEL(args.Model)
+
+	_, err := stmt.ExecContext(ctx, db)
 	if err != nil {
 		return err
 	}

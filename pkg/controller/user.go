@@ -46,7 +46,15 @@ func (ctl *Controller) CreateUser(c echo.Context) error {
 		UpdatedAt: time.Now().UTC(),
 	}
 
-	err = dbx.InsertByModel(ctx, table.Users, table.Users.AllColumns, userModel)
+	err = dbx.InsertByModel(
+		ctx,
+		dbx.GetDB(),
+		&dbx.InsertArgs{
+			Table:      table.Users,
+			ColumnList: table.Users.AllColumns,
+			Model:      userModel,
+		},
+	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to insert user: "+err.Error())
 	}
@@ -64,9 +72,12 @@ func (ctl *Controller) GetUser(c echo.Context) error {
 
 	userModel, err := dbx.Single[model.Users](
 		ctx,
-		table.Users,
-		mysql.ProjectionList{table.Users.AllColumns},
-		optional.Some(table.Users.ID.EQ(mysql.Uint64(sess.UserID))),
+		dbx.GetDB(),
+		&dbx.SelectArgs{
+			Table:      table.Users,
+			ColumnList: mysql.ProjectionList{table.Users.AllColumns},
+			Where:      optional.Some(table.Users.ID.EQ(mysql.Uint64(sess.UserID))),
+		},
 	)
 
 	if err != nil {
@@ -106,9 +117,12 @@ func (ctl *Controller) Login(c echo.Context) error {
 
 	result, err := dbx.Single[row](
 		ctx,
-		table.Users,
-		[]mysql.Projection{table.Users.ID, table.Users.Password},
-		optional.Some(table.Users.Name.EQ(mysql.String(req.Name))),
+		dbx.GetDB(),
+		&dbx.SelectArgs{
+			Table:      table.Users,
+			ColumnList: []mysql.Projection{table.Users.ID, table.Users.Password},
+			Where:      optional.Some(table.Users.Name.EQ(mysql.String(req.Name))),
+		},
 	)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "failed to fetch password"+err.Error())
