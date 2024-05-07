@@ -95,20 +95,20 @@ func Single[T any](ctx context.Context, db qrm.Queryable, args *SelectArgs) (*T,
 	return dest, nil
 }
 
-func Search[T any](ctx context.Context, table mysql.Table, columnList mysql.ProjectionList, where optional.Option[mysql.BoolExpression]) ([]T, error) {
-	if len(columnList) == 0 {
+func Search[T any](ctx context.Context, db qrm.Queryable, args *SelectArgs) ([]T, error) {
+	if len(args.ColumnList) == 0 {
 		return nil, fmt.Errorf("column needed")
 	}
 
 	var stmt mysql.SelectStatement
-	if where.IsSome() {
-		stmt = table.SELECT(columnList[0], columnList[1:]...).FROM(table).WHERE(where.Unwrap())
+	if args.Where.IsSome() {
+		stmt = args.Table.SELECT(args.ColumnList[0], args.ColumnList[1:]...).FROM(args.Table).WHERE(args.Where.Unwrap())
 	} else {
-		stmt = table.SELECT(columnList[0], columnList[1:]...).FROM(table)
+		stmt = args.Table.SELECT(args.ColumnList[0], args.ColumnList[1:]...).FROM(args.Table)
 	}
 
 	var dest []T
-	err := stmt.QueryContext(ctx, GetDB(), &dest)
+	err := stmt.QueryContext(ctx, db, &dest)
 	if err != nil {
 		return nil, err
 	}

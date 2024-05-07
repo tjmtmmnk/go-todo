@@ -27,12 +27,11 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) 
 
 // Todos is the resolver for the todos field.
 func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	todos, err := dbx.Search[dbModel.Todos](
-		ctx,
-		table.Todos,
-		mysql.ProjectionList{table.Todos.AllColumns},
-		optional.None[mysql.BoolExpression](),
-	)
+	todos, err := dbx.Search[dbModel.Todos](ctx, dbx.GetDB(), &dbx.SelectArgs{
+		Table:      table.Todos,
+		ColumnList: mysql.ProjectionList{table.Todos.AllColumns},
+		Where:      nil,
+	})
 	if err != nil {
 		return nil, err
 	}

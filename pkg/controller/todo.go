@@ -72,12 +72,11 @@ func (ctl *Controller) ListTodo(c echo.Context) error {
 		return err
 	}
 
-	todoModels, err := dbx.Search[model.Todos](
-		ctx,
-		table.Todos,
-		mysql.ProjectionList{table.Todos.AllColumns},
-		optional.Some(table.Todos.UserID.EQ(mysql.Uint64(sess.UserID))),
-	)
+	todoModels, err := dbx.Search[model.Todos](ctx, dbx.GetDB(), &dbx.SelectArgs{
+		Table:      table.Todos,
+		ColumnList: mysql.ProjectionList{table.Todos.AllColumns},
+		Where:      optional.Some(table.Todos.UserID.EQ(mysql.Uint64(sess.UserID))),
+	})
 	fmt.Println(todoModels)
 
 	todos := lo.Map(todoModels, func(t model.Todos, _ int) *todo.Todo {
