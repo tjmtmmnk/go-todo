@@ -17,6 +17,6 @@ type User struct {
 	ID        string  `json:"id"`
 	Name      string  `json:"name"`
 	Nickname  *string `json:"nickname,omitempty"`
-	CreatedAt *string `json:"createdAt,omitempty"`
-	UpdatedAt *string `json:"updatedAt,omitempty"`
+	CreatedAt string  `json:"createdAt"`
+	UpdatedAt string  `json:"updatedAt"`
 }

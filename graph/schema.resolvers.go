@@ -7,7 +7,6 @@ package graph
 import (
 	"context"
 	"fmt"
-	"github.com/tjmtmmnk/go-todo/pkg/timex"
 	"strconv"
 	"time"
 
@@ -18,6 +17,7 @@ import (
 	dbModel "github.com/tjmtmmnk/go-todo/pkg/db/model"
 	"github.com/tjmtmmnk/go-todo/pkg/db/table"
 	"github.com/tjmtmmnk/go-todo/pkg/dbx"
+	"github.com/tjmtmmnk/go-todo/pkg/timex"
 )
 
 // CreateTodo is the resolver for the createTodo field.
@@ -67,15 +67,13 @@ func (r *todoResolver) User(ctx context.Context, obj *model.Todo) (*model.User, 
 	if err != nil {
 		return nil, err
 	}
-	createdAt := user.CreatedAt.In(timex.JST).Format(time.DateTime)
-	updatedAt := user.UpdatedAt.In(timex.JST).Format(time.DateTime)
 
 	return &model.User{
 		ID:        strconv.FormatUint(user.ID, 10),
 		Name:      user.Name,
 		Nickname:  user.Nickname,
-		CreatedAt: &createdAt,
-		UpdatedAt: &updatedAt,
+		CreatedAt: user.CreatedAt.In(timex.JST).Format(time.DateTime),
+		UpdatedAt: user.UpdatedAt.In(timex.JST).Format(time.DateTime),
 	}, nil
 }
 

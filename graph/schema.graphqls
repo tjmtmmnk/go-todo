@@ -9,16 +9,16 @@ type Todo {
     user: User!
     startAt: String
     endAt: String
-    createdAt: String
-    updatedAt: String
+    createdAt: String!
+    updatedAt: String!
 }
 
 type User {
     id: ID!
     name: String!
     nickname: String
-    createdAt: String
-    updatedAt: String
+    createdAt: String!
+    updatedAt: String!
 }
 
 type Query {
