@@ -7,17 +7,17 @@ package graph
 import (
 	"context"
 	"fmt"
-	"github.com/go-jet/jet/v2/mysql"
-	"github.com/moznion/go-optional"
-	"github.com/samber/lo"
-	dbModel "github.com/tjmtmmnk/go-todo/pkg/db/model"
-	"github.com/tjmtmmnk/go-todo/pkg/db/table"
-	"github.com/tjmtmmnk/go-todo/pkg/dbx"
 	"github.com/tjmtmmnk/go-todo/pkg/timex"
 	"strconv"
 	"time"
 
+	"github.com/go-jet/jet/v2/mysql"
+	"github.com/moznion/go-optional"
+	"github.com/samber/lo"
 	"github.com/tjmtmmnk/go-todo/graph/model"
+	dbModel "github.com/tjmtmmnk/go-todo/pkg/db/model"
+	"github.com/tjmtmmnk/go-todo/pkg/db/table"
+	"github.com/tjmtmmnk/go-todo/pkg/dbx"
 )
 
 // CreateTodo is the resolver for the createTodo field.
@@ -36,40 +36,13 @@ func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
 	if err != nil {
 		return nil, err
 	}
-	userIds := lo.Map(todos, func(todo dbModel.Todos, index int) mysql.Expression {
-		return mysql.Uint64(todo.UserID)
-	})
-	users, err := dbx.Search[dbModel.Users](
-		ctx,
-		table.Users,
-		mysql.ProjectionList{table.Users.AllColumns},
-		optional.Some(table.Users.ID.IN(userIds...)),
-	)
-	if err != nil {
-		return nil, err
-	}
-	userIdToUser := lo.KeyBy(users, func(user dbModel.Users) uint64 {
-		return user.ID
-	})
 
 	todoModels := lo.Map(todos, func(todo dbModel.Todos, index int) *model.Todo {
-		user, ok := userIdToUser[todo.UserID]
-		if !ok {
-			return nil
-		}
-		userCreatedAt := user.CreatedAt.In(timex.JST).Format(time.DateTime)
-		userUpdatedAt := user.UpdatedAt.In(timex.JST).Format(time.DateTime)
 		return &model.Todo{
-			ID:       strconv.FormatUint(todo.ID, 10),
-			ItemName: todo.ItemName,
-			Done:     todo.Done,
-			User: &model.User{
-				ID:        strconv.FormatUint(user.ID, 10),
-				Name:      user.Name,
-				Nickname:  user.Nickname,
-				CreatedAt: &userCreatedAt,
-				UpdatedAt: &userUpdatedAt,
-			},
+			ID:        strconv.FormatUint(todo.ID, 10),
+			ItemName:  todo.ItemName,
+			Done:      todo.Done,
+			UserID:    todo.UserID,
 			StartAt:   nil,
 			EndAt:     nil,
 			CreatedAt: nil,
@@ -80,11 +53,41 @@ func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
 	return todoModels, nil
 }
 
+// User is the resolver for the user field.
+func (r *todoResolver) User(ctx context.Context, obj *model.Todo) (*model.User, error) {
+	user, err := dbx.Single[dbModel.Users](
+		ctx,
+		r.DB,
+		&dbx.SelectArgs{
+			Table:      table.Users,
+			ColumnList: mysql.ProjectionList{table.Users.AllColumns},
+			Where:      optional.Some(table.Users.ID.EQ(mysql.Uint64(obj.UserID))),
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	createdAt := user.CreatedAt.In(timex.JST).Format(time.DateTime)
+	updatedAt := user.UpdatedAt.In(timex.JST).Format(time.DateTime)
+
+	return &model.User{
+		ID:        strconv.FormatUint(user.ID, 10),
+		Name:      user.Name,
+		Nickname:  user.Nickname,
+		CreatedAt: &createdAt,
+		UpdatedAt: &updatedAt,
+	}, nil
+}
+
 // Mutation returns MutationResolver implementation.
 func (r *Resolver) Mutation() MutationResolver { return &mutationResolver{r} }
 
 // Query returns QueryResolver implementation.
 func (r *Resolver) Query() QueryResolver { return &queryResolver{r} }
 
+// Todo returns TodoResolver implementation.
+func (r *Resolver) Todo() TodoResolver { return &todoResolver{r} }
+
 type mutationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }
+type todoResolver struct{ *Resolver }
