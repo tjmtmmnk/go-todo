@@ -83,7 +83,7 @@ func Single[T any](ctx context.Context, db qrm.Queryable, args *SelectArgs) (*T,
 	if args.Where.IsSome() {
 		stmt = args.Table.SELECT(args.ColumnList[0], args.ColumnList[1:]...).FROM(args.Table).WHERE(args.Where.Unwrap()).LIMIT(1)
 	} else {
-		stmt = args.Table.SELECT(args.ColumnList[0], args.ColumnList[1:]...).FROM(args.Table).WHERE(args.Where.Unwrap())
+		stmt = args.Table.SELECT(args.ColumnList[0], args.ColumnList[1:]...).FROM(args.Table).LIMIT(1)
 	}
 
 	dest := new(T)
