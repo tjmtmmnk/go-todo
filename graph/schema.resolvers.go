@@ -30,7 +30,7 @@ func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
 	todos, err := dbx.Search[dbModel.Todos](ctx, dbx.GetDB(), &dbx.SelectArgs{
 		Table:      table.Todos,
 		ColumnList: mysql.ProjectionList{table.Todos.AllColumns},
-		Where:      nil,
+		Where:      optional.None[mysql.BoolExpression](),
 	})
 	if err != nil {
 		return nil, err
