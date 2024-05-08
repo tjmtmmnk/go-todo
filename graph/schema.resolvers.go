@@ -27,10 +27,9 @@ func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) 
 
 // Todos is the resolver for the todos field.
 func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	todos, err := dbx.Search[dbModel.Todos](ctx, dbx.GetDB(), &dbx.SelectArgs{
+	todos, err := dbx.Search[dbModel.Todos](ctx, dbx.GetDB(), &dbx.SearchArgs{
 		Table:      table.Todos,
 		ColumnList: mysql.ProjectionList{table.Todos.AllColumns},
-		Where:      optional.None[mysql.BoolExpression](),
 	})
 	if err != nil {
 		return nil, err
@@ -57,7 +56,7 @@ func (r *todoResolver) User(ctx context.Context, obj *model.Todo) (*model.User, 
 	user, err := dbx.Single[dbModel.Users](
 		ctx,
 		r.DB,
-		&dbx.SelectArgs{
+		&dbx.SingleArgs{
 			Table:      table.Users,
 			ColumnList: mysql.ProjectionList{table.Users.AllColumns},
 			Where:      optional.Some(table.Users.ID.EQ(mysql.Uint64(obj.UserID))),

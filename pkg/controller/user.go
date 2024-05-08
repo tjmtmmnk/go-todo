@@ -73,7 +73,7 @@ func (ctl *Controller) GetUser(c echo.Context) error {
 	userModel, err := dbx.Single[model.Users](
 		ctx,
 		dbx.GetDB(),
-		&dbx.SelectArgs{
+		&dbx.SingleArgs{
 			Table:      table.Users,
 			ColumnList: mysql.ProjectionList{table.Users.AllColumns},
 			Where:      optional.Some(table.Users.ID.EQ(mysql.Uint64(sess.UserID))),
@@ -118,7 +118,7 @@ func (ctl *Controller) Login(c echo.Context) error {
 	result, err := dbx.Single[row](
 		ctx,
 		dbx.GetDB(),
-		&dbx.SelectArgs{
+		&dbx.SingleArgs{
 			Table:      table.Users,
 			ColumnList: []mysql.Projection{table.Users.ID, table.Users.Password},
 			Where:      optional.Some(table.Users.Name.EQ(mysql.String(req.Name))),

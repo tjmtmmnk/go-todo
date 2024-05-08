@@ -19,7 +19,7 @@ func (ctl *Controller) Root(c echo.Context) error {
 		return err
 	}
 
-	todoModels, err := dbx.Search[model.Todos](ctx, dbx.GetDB(), &dbx.SelectArgs{
+	todoModels, err := dbx.Search[model.Todos](ctx, dbx.GetDB(), &dbx.SearchArgs{
 		Table:      table.Todos,
 		ColumnList: mysql.ProjectionList{table.Todos.AllColumns},
 		Where:      optional.Some(table.Todos.UserID.EQ(mysql.Uint64(sess.UserID))),
