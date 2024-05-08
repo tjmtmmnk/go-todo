@@ -68,23 +68,22 @@ func (db *DB) UUID() uint64 {
 	return uuid
 }
 
-type SelectArgs struct {
+type SingleArgs struct {
 	Table      mysql.Table
 	ColumnList mysql.ProjectionList
 	Where      optional.Option[mysql.BoolExpression]
 }
 
-func Single[T any](ctx context.Context, db qrm.Queryable, args *SelectArgs) (*T, error) {
+func Single[T any](ctx context.Context, db qrm.Queryable, args *SingleArgs) (*T, error) {
 	if len(args.ColumnList) == 0 {
 		return nil, fmt.Errorf("column needed")
 	}
 
-	var stmt mysql.SelectStatement
+	stmt := args.Table.SELECT(args.ColumnList[0], args.ColumnList[1:]...).FROM(args.Table)
 	if args.Where.IsSome() {
-		stmt = args.Table.SELECT(args.ColumnList[0], args.ColumnList[1:]...).FROM(args.Table).WHERE(args.Where.Unwrap()).LIMIT(1)
-	} else {
-		stmt = args.Table.SELECT(args.ColumnList[0], args.ColumnList[1:]...).FROM(args.Table).LIMIT(1)
+		stmt = stmt.WHERE(args.Where.Unwrap())
 	}
+	stmt = stmt.LIMIT(1)
 
 	dest := new(T)
 	err := stmt.QueryContext(ctx, db, dest)
@@ -95,17 +94,55 @@ func Single[T any](ctx context.Context, db qrm.Queryable, args *SelectArgs) (*T,
 	return dest, nil
 }
 
-func Search[T any](ctx context.Context, db qrm.Queryable, args *SelectArgs) ([]T, error) {
+type SearchOpts struct {
+	OrderBy   optional.Option[mysql.OrderByClause]
+	Limit     optional.Option[int64]
+	Offset    optional.Option[int64]
+	ForUpdate optional.Option[mysql.RowLock]
+	GroupBy   optional.Option[mysql.GroupByClause]
+	Having    optional.Option[mysql.BoolExpression]
+}
+
+type SearchArgs struct {
+	Table      mysql.Table
+	ColumnList mysql.ProjectionList
+	Where      optional.Option[mysql.BoolExpression]
+	Opts       SearchOpts
+}
+
+func Search[T any](ctx context.Context, db qrm.Queryable, args *SearchArgs) ([]T, error) {
 	if len(args.ColumnList) == 0 {
 		return nil, fmt.Errorf("column needed")
 	}
 
-	var stmt mysql.SelectStatement
+	stmt := args.Table.
+		SELECT(args.ColumnList[0], args.ColumnList[1:]...).
+		FROM(args.Table)
+
 	if args.Where.IsSome() {
-		stmt = args.Table.SELECT(args.ColumnList[0], args.ColumnList[1:]...).FROM(args.Table).WHERE(args.Where.Unwrap())
-	} else {
-		stmt = args.Table.SELECT(args.ColumnList[0], args.ColumnList[1:]...).FROM(args.Table)
+		stmt = stmt.WHERE(args.Where.Unwrap())
 	}
+
+	if args.Opts.OrderBy.IsSome() {
+		stmt = stmt.ORDER_BY(args.Opts.OrderBy.Unwrap())
+	}
+	if args.Opts.Limit.IsSome() {
+		stmt = stmt.LIMIT(args.Opts.Limit.Unwrap())
+	}
+	if args.Opts.Offset.IsSome() {
+		stmt = stmt.OFFSET(args.Opts.Offset.Unwrap())
+	}
+	if args.Opts.ForUpdate.IsSome() {
+		stmt = stmt.FOR(args.Opts.ForUpdate.Unwrap())
+	}
+	if args.Opts.GroupBy.IsSome() {
+		stmt = stmt.GROUP_BY(args.Opts.GroupBy.Unwrap())
+	}
+	if args.Opts.Having.IsSome() {
+		stmt = stmt.HAVING(args.Opts.Having.Unwrap())
+	}
+
+	fmt.Println(stmt.DebugSql())
 
 	var dest []T
 	err := stmt.QueryContext(ctx, db, &dest)
