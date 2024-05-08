@@ -2,21 +2,115 @@
 
 package model
 
+import (
+	"fmt"
+	"io"
+	"strconv"
+)
+
+type CreateTodoInput struct {
+	ItemName string  `json:"itemName"`
+	Done     bool    `json:"done"`
+	UserID   string  `json:"userId"`
+	StartAt  *string `json:"startAt,omitempty"`
+	EndAt    *string `json:"endAt,omitempty"`
+}
+
+type CreateUserInput struct {
+	Name     string  `json:"name"`
+	Nickname *string `json:"nickname,omitempty"`
+	Password string  `json:"password"`
+}
+
+type DeleteTodoInput struct {
+	TodoID string `json:"todoId"`
+}
+
+type DeleteTodoPayload struct {
+	IsSucceed bool `json:"isSucceed"`
+}
+
 type Mutation struct {
 }
 
-type NewTodo struct {
-	Text   string `json:"text"`
-	UserID string `json:"userId"`
+type PageInfo struct {
+	HasNextPage     bool   `json:"hasNextPage"`
+	HasPreviousPage bool   `json:"hasPreviousPage"`
+	StartCursor     string `json:"startCursor"`
+	EndCursor       string `json:"endCursor"`
 }
 
 type Query struct {
 }
 
-type User struct {
-	ID        string  `json:"id"`
-	Name      string  `json:"name"`
-	Nickname  *string `json:"nickname,omitempty"`
-	CreatedAt string  `json:"createdAt"`
-	UpdatedAt string  `json:"updatedAt"`
+type TodoConnection struct {
+	TotalCount int         `json:"totalCount"`
+	PageInfo   *PageInfo   `json:"pageInfo"`
+	Edges      []*TodoEdge `json:"edges"`
+}
+
+type TodoEdge struct {
+	Cursor string `json:"cursor"`
+	Node   *Todo  `json:"node"`
+}
+
+type TodoPayload struct {
+	Todo *Todo `json:"todo"`
+}
+
+type UpdateTodoInput struct {
+	TodoID   string  `json:"todoId"`
+	ItemName string  `json:"itemName"`
+	Done     bool    `json:"done"`
+	StartAt  *string `json:"startAt,omitempty"`
+	EndAt    *string `json:"endAt,omitempty"`
+}
+
+type TodoSort string
+
+const (
+	TodoSortStartAtAsc    TodoSort = "START_AT_ASC"
+	TodoSortStartAtDesc   TodoSort = "START_AT_DESC"
+	TodoSortEndAtAsc      TodoSort = "END_AT_ASC"
+	TodoSortEndAtDesc     TodoSort = "END_AT_DESC"
+	TodoSortCreatedAtAsc  TodoSort = "CREATED_AT_ASC"
+	TodoSortCreatedAtDesc TodoSort = "CREATED_AT_DESC"
+)
+
+var AllTodoSort = []TodoSort{
+	TodoSortStartAtAsc,
+	TodoSortStartAtDesc,
+	TodoSortEndAtAsc,
+	TodoSortEndAtDesc,
+	TodoSortCreatedAtAsc,
+	TodoSortCreatedAtDesc,
+}
+
+func (e TodoSort) IsValid() bool {
+	switch e {
+	case TodoSortStartAtAsc, TodoSortStartAtDesc, TodoSortEndAtAsc, TodoSortEndAtDesc, TodoSortCreatedAtAsc, TodoSortCreatedAtDesc:
+		return true
+	}
+	return false
+}
+
+func (e TodoSort) String() string {
+	return string(e)
+}
+
+func (e *TodoSort) UnmarshalGQL(v interface{}) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = TodoSort(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid TodoSort", str)
+	}
+	return nil
+}
+
+func (e TodoSort) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }

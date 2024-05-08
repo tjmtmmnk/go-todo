@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/tjmtmmnk/go-todo/graph/resolver"
+	"github.com/tjmtmmnk/go-todo/graph/schema"
 	"github.com/tjmtmmnk/go-todo/pkg/db/table"
 	"github.com/tjmtmmnk/go-todo/pkg/dbx"
 	"log"
@@ -9,7 +11,6 @@ import (
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/tjmtmmnk/go-todo/graph"
 )
 
 const defaultPort = "8080"
@@ -39,7 +40,7 @@ func main() {
 	}
 	defer dbx.GetDB().Close()
 
-	srv := handler.NewDefaultServer(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{
+	srv := handler.NewDefaultServer(schema.NewExecutableSchema(schema.Config{Resolvers: &resolver.Resolver{
 		DB: dbx.GetDB(),
 	}}))
 

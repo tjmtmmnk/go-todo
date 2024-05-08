@@ -1,35 +1,93 @@
-# GraphQL schema example
-#
-# https://gqlgen.com/getting-started/
+scalar DateTime
 
 type Todo {
     id: ID!
     itemName: String!
     done: Boolean!
     user: User!
-    startAt: String
-    endAt: String
-    createdAt: String!
-    updatedAt: String!
+    startAt: DateTime
+    endAt: DateTime
+    createdAt: DateTime!
+    updatedAt: DateTime!
 }
 
 type User {
     id: ID!
     name: String!
     nickname: String
-    createdAt: String!
-    updatedAt: String!
+    todos(first: Int, after: String, sort: TodoSort = "START_AT_ASC"): TodoConnection!
+    createdAt: DateTime!
+    updatedAt: DateTime!
 }
 
-type Query {
-    todos: [Todo!]!
+type TodoConnection {
+    totalCount: Int!
+    pageInfo: PageInfo!
+    edges: [TodoEdge!]!
 }
 
-input NewTodo {
-    text: String!
-    userId: String!
+type PageInfo {
+    hasNextPage: Boolean!
+    hasPreviousPage: Boolean!
+    startCursor: String!
+    endCursor: String!
+}
+
+type TodoEdge {
+    cursor: String!
+    node: Todo!
+}
+
+enum TodoSort {
+    START_AT_ASC,
+    START_AT_DESC,
+    END_AT_ASC,
+    END_AT_DESC,
+    CREATED_AT_ASC,
+    CREATED_AT_DESC
+}
+
+input CreateTodoInput {
+    itemName: String!
+    done: Boolean! = false
+    userId: ID!
+    startAt: DateTime
+    endAt: DateTime
+}
+
+input UpdateTodoInput {
+    todoId: ID!
+    itemName: String!
+    done: Boolean! = false
+    startAt: DateTime
+    endAt: DateTime
+}
+
+type TodoPayload {
+    todo: Todo!
+}
+
+input DeleteTodoInput {
+    todoId: ID!
+}
+
+type DeleteTodoPayload {
+    isSucceed: Boolean!
+}
+
+input CreateUserInput {
+    name: String!
+    nickname: String
+    password: String!
 }
 
 type Mutation {
-    createTodo(input: NewTodo!): Todo!
+    createTodo(input: CreateTodoInput!): TodoPayload!
+    updateTodo(input: UpdateTodoInput!): TodoPayload!
+    deleteTodo(input: DeleteTodoInput!): DeleteTodoPayload!
+    createUser(input: CreateUserInput!): User!
+}
+
+type Query {
+    user(id: ID!): User
 }
