@@ -62,7 +62,7 @@ func TestSingle(t *testing.T) {
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	err := InsertByModel(
+	MustInsertByModel(
 		context.Background(),
 		db,
 		&InsertArgs{
@@ -71,9 +71,6 @@ func TestSingle(t *testing.T) {
 			userModel,
 		},
 	)
-	if err != nil {
-		panic(err)
-	}
 
 	todoModel1 := model.Todos{
 		ID:        1,
@@ -86,7 +83,7 @@ func TestSingle(t *testing.T) {
 		UpdatedAt: now,
 	}
 
-	err = InsertByModel(
+	MustInsertByModel(
 		context.Background(),
 		db,
 		&InsertArgs{
@@ -95,9 +92,6 @@ func TestSingle(t *testing.T) {
 			todoModel1,
 		},
 	)
-	if err != nil {
-		panic(err)
-	}
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
@@ -168,7 +162,7 @@ func TestSearch(t *testing.T) {
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	err := InsertByModel(
+	MustInsertByModel(
 		context.Background(),
 		db,
 		&InsertArgs{
@@ -177,9 +171,6 @@ func TestSearch(t *testing.T) {
 			userModel,
 		},
 	)
-	if err != nil {
-		panic(err)
-	}
 
 	todoModel1 := model.Todos{
 		ID:        1,
@@ -203,7 +194,7 @@ func TestSearch(t *testing.T) {
 	}
 
 	for _, m := range []model.Todos{todoModel1, todoModel2} {
-		err = InsertByModel(
+		MustInsertByModel(
 			context.Background(),
 			db,
 			&InsertArgs{
@@ -212,9 +203,6 @@ func TestSearch(t *testing.T) {
 				m,
 			},
 		)
-		if err != nil {
-			panic(err)
-		}
 	}
 
 	for _, tt := range testCases {

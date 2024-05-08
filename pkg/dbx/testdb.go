@@ -1,8 +1,10 @@
 package dbx
 
 import (
+	"context"
 	"database/sql"
 	"github.com/DATA-DOG/go-txdb"
+	"github.com/go-jet/jet/v2/qrm"
 	"github.com/tjmtmmnk/go-todo/pkg/db/table"
 	"testing"
 )
@@ -40,4 +42,11 @@ func MustConnect(t *testing.T) *DB {
 	})
 
 	return db
+}
+
+func MustInsertByModel(ctx context.Context, db qrm.Executable, args *InsertArgs) {
+	err := InsertByModel(ctx, db, args)
+	if err != nil {
+		panic(err)
+	}
 }
